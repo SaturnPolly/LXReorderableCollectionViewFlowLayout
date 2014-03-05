@@ -129,6 +129,10 @@ static NSString * const kLXCollectionViewKeyPath = @"collectionView";
     [[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationWillResignActiveNotification object:nil];
 }
 
+- (UIView *)currentProxyView {
+    return self.currentView;
+}
+
 - (void)applyLayoutAttributes:(UICollectionViewLayoutAttributes *)layoutAttributes {
     if ([layoutAttributes.indexPath isEqual:self.selectedItemIndexPath]) {
         layoutAttributes.hidden = YES;
@@ -312,9 +316,13 @@ static NSString * const kLXCollectionViewKeyPath = @"collectionView";
              animations:^{
                  __strong typeof(self) strongSelf = weakSelf;
                  if (strongSelf) {
-                     strongSelf.currentView.transform = CGAffineTransformMakeScale(1.1f, 1.1f);
                      highlightedImageView.alpha = 0.0f;
                      imageView.alpha = 1.0f;
+                     if ([strongSelf.delegate respondsToSelector:@selector(collectionView:layout:animateBeginDragProxyView:)]) {
+                         [strongSelf.delegate collectionView:strongSelf.collectionView layout:strongSelf animateBeginDragProxyView:strongSelf.currentView];
+                     } else {
+                         strongSelf.currentView.transform = CGAffineTransformMakeScale(1.1f, 1.1f);
+                     }
                  }
              }
              completion:^(BOOL finished) {
@@ -352,8 +360,12 @@ static NSString * const kLXCollectionViewKeyPath = @"collectionView";
                  animations:^{
                      __strong typeof(self) strongSelf = weakSelf;
                      if (strongSelf) {
-                         strongSelf.currentView.transform = CGAffineTransformMakeScale(1.0f, 1.0f);
-                         strongSelf.currentView.center = layoutAttributes.center;
+                         if ([strongSelf.delegate respondsToSelector:@selector(collectionView:layout:animateEndDragProxyView:layoutAttributes:)]) {
+                             [strongSelf.delegate collectionView:strongSelf.collectionView layout:strongSelf animateEndDragProxyView:strongSelf.currentView layoutAttributes:layoutAttributes];
+                         } else {
+                             strongSelf.currentView.transform = CGAffineTransformIdentity;
+                             strongSelf.currentView.center = layoutAttributes.center;
+                         }
                      }
                  }
                  completion:^(BOOL finished) {
